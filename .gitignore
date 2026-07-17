@@ -1,0 +1,7 @@
+node_modules/
+server/.env
+client/dist/
+*.png
+server/screenshots/
+.env*
+.DS_Store
