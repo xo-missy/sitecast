@@ -7,9 +7,17 @@ const IssueSchema = new mongoose.Schema({
 }, { _id: true });
 
 const category = { score: Number, issues: [IssueSchema] };
+const ScanUpdateSchema = new mongoose.Schema({
+  id: String,
+  text: String,
+  level: { type: String, default: 'info' },
+  createdAt: { type: Date, default: Date.now }
+}, { _id: false });
+
 const AuditSchema = new mongoose.Schema({
   url: String, createdAt: { type: Date, default: Date.now }, status: { type: String, default: 'pending' },
-  error: String, overallScore: Number,
+  error: String, currentStep: String, scanUpdates: [ScanUpdateSchema], overallScore: Number,
+  loadTime: Number, statusCode: Number,
   categories: { performance: category, seo: category, accessibility: category, mobile: category },
   pageText: String,
   vibeCheck: { tone: String, summary: String, sampleRewrite: String },

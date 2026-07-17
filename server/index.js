@@ -13,8 +13,29 @@ const ai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_
 
 app.post('/api/audit', async (req, res) => {
   const url = validUrl(req.body.url); if (!url) return res.status(400).json({ error: 'Enter a valid http(s) URL.' });
-  const audit = newAudit({ url, status: 'pending' }); await save(audit); res.status(202).json({ auditId: audit._id });
-  scanSite(url).then(async data => { Object.assign(audit, data, { status: 'complete' }); await save(audit); }).catch(async err => { audit.status = 'failed'; audit.error = err.message.includes('Timeout') ? 'The site took too long to respond. Try again or check the URL.' : `Scan failed: ${err.message}`; await save(audit); });
+  const audit = newAudit({
+    url,
+    status: 'pending',
+    currentStep: 'Queueing audit…',
+    scanUpdates: [{ id: 'queued', text: 'Audit queued. Preparing a clean browser session…', level: 'info' }]
+  });
+  await save(audit); res.status(202).json({ auditId: audit._id });
+  const updateProgress = async (id, text, level = 'ok') => {
+    audit.currentStep = text;
+    audit.scanUpdates = [...(audit.scanUpdates || []).filter(update => update.id !== id), { id, text, level, createdAt: new Date() }].slice(-12);
+    await save(audit);
+  };
+  scanSite(url, false, updateProgress).then(async data => {
+    await updateProgress('report', 'Compiling your audit report…');
+    Object.assign(audit, data, { status: 'complete', currentStep: 'Audit complete' });
+    await save(audit);
+  }).catch(async err => {
+    audit.status = 'failed';
+    audit.error = err.message.includes('Timeout') ? 'The site took too long to respond. Try again or check the URL.' : `Scan failed: ${err.message}`;
+    audit.currentStep = 'Audit failed';
+    audit.scanUpdates = [...(audit.scanUpdates || []), { id: 'failed', text: audit.error, level: 'error', createdAt: new Date() }].slice(-12);
+    await save(audit);
+  });
 });
 app.get('/api/audit/:id', async (req, res) => { const audit = await find(req.params.id); if (!audit) return res.status(404).json({ error: 'Audit not found.' }); res.json(audit); });
 app.post('/api/audit/:id/compare', async (req, res) => {
