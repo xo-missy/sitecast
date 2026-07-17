@@ -33,4 +33,7 @@ app.post('/api/audit/:id/ask', async (req, res) => { const audit = await find(re
   try { const completion = await ai.chat.completions.create({ model: 'gpt-5.6', messages: [{ role: 'system', content: 'Answer plainly and only from this Sitecast audit data. If unsupported, say so. Audit: ' + JSON.stringify(issues) }, { role: 'user', content: question }] }); res.json({ answer: completion.choices[0].message.content }); } catch { res.status(503).json({ error: 'Chat is temporarily unavailable.' }); }
 });
 app.patch('/api/audit/:id/issues/:issueId', async (req, res) => { const audit = await find(req.params.id); if (!audit) return res.status(404).json({ error: 'Audit not found.' }); let found; Object.values(audit.categories || {}).forEach(c => (c.issues || []).forEach(i => { if (String(i._id) === req.params.issueId) { i.resolved = true; found = i; } })); if (!found) return res.status(404).json({ error: 'Issue not found.' }); await save(audit); res.json(found); });
-app.listen(PORT, () => console.log(`Sitecast API on ${PORT}`));
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  app.listen(PORT, () => console.log(`Sitecast API on ${PORT}`));
+}
+export default app;
