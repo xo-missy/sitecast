@@ -180,6 +180,38 @@ function Landing() {
       {error && <p className="formerror">{error}</p>}
       <div className="trust"><span>NO CREDIT CARD</span><span>⌁</span><span>RESULTS IN ~30 SECONDS</span><span>⌁</span><span>BUILT FOR REAL TEAMS</span></div>
     </section>
+    
+    <section className="features-section">
+      <p className="eyebrow section-eyebrow">FEATURES SHIELD</p>
+      <h2 className="section-title">A complete site audit suite</h2>
+      <div className="features-grid">
+        <div className="feature-card glass-panel">
+          <span className="feature-icon">🎯</span>
+          <h3>Prioritized Cost Audit</h3>
+          <p>Scans a URL and returns a prioritized list across performance, SEO, accessibility, and mobile — each issue paired with a plain-English explanation of what it is costing your business, not just a technical score.</p>
+        </div>
+        <div className="feature-card glass-panel">
+          <span className="feature-icon">👤</span>
+          <h3>Shadow Mode</h3>
+          <p>Compares your site against a competitor's and generates a comprehensive "Battle Card" detailing exactly what to fix and where you are already winning.</p>
+        </div>
+        <div className="feature-card glass-panel">
+          <span className="feature-icon">✨</span>
+          <h3>Vibe Check (GPT-5.6)</h3>
+          <p>Analyzes your landing copy's tone using state-of-the-art language models and suggests a friendlier, higher-converting rewrite instantly.</p>
+        </div>
+        <div className="feature-card glass-panel">
+          <span className="feature-icon">💬</span>
+          <h3>Ask Me Anything</h3>
+          <p>A conversational chat assistant scoped directly to your specific audit results, allowing you to ask follow-up questions about fixes.</p>
+        </div>
+        <div className="feature-card glass-panel">
+          <span className="feature-icon">⚡</span>
+          <h3>Auto-Surgeon Fixes</h3>
+          <p>A staged preview of the generated code fix, the first step toward full GitHub PR automation. Mark issues as resolved with one click.</p>
+        </div>
+      </div>
+    </section>
   </main>;
 }
 
@@ -260,8 +292,13 @@ function Report() {
   if (!audit) return <main className="report loading page-shell">Loading report…</main>;
   const categories = audit.categories || {};
   const issues = Object.values(categories).flatMap(category => category.issues || []);
-  const quick = issues.filter(issue => issue.quickWin && !issue.resolved);
-  const other = issues.filter(issue => !issue.quickWin && !issue.resolved);
+  
+  // Sort issues by severity: high -> medium -> low
+  const severityOrder = { high: 1, medium: 2, low: 3 };
+  const sortedIssues = [...issues].sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
+  
+  const quick = sortedIssues.filter(issue => issue.quickWin && !issue.resolved);
+  const other = sortedIssues.filter(issue => !issue.quickWin && !issue.resolved);
   return <main className="report page-shell">
     <header><Link to="/" className="brand">site<span>cast</span></Link><span className="auditurl">AUDIT REPORT · {hostName(audit.url)}</span><Link to={`/report/${auditId}/compare`}>SHADOW MODE ↗</Link></header>
     <section className="summary">
@@ -271,7 +308,7 @@ function Report() {
     </section>
     <section className="categories" aria-label="Audit category scores">{Object.entries(categories).map(([category, data]) => <CategoryCard key={category} category={category} data={data} />)}</section>
     <GhostComparison />
-    <section className="vibe glass-panel"><div><p className="eyebrow">✦ AI VIBE CHECK</p><h3>{audit.vibeCheck?.tone || 'Does your copy sound like you?'}</h3><p>{audit.vibeCheck?.summary || 'Read your site’s tone through the eyes of a first-time visitor.'}</p></div>{audit.vibeCheck ? <blockquote>“{audit.vibeCheck.sampleRewrite}”</blockquote> : <button onClick={loadVibe} disabled={vibe}>{vibe ? 'READING COPY…' : 'ANALYZE TONE ↗'}</button>}</section>
+    <section className="vibe glass-panel"><div><p className="eyebrow">✦ AI VIBE CHECK (GPT-5.6)</p><h3>{audit.vibeCheck?.tone || 'Does your copy sound like you?'}</h3><p>{audit.vibeCheck?.summary || 'Read your site’s tone through the eyes of a first-time visitor.'}</p></div>{audit.vibeCheck ? <blockquote>“{audit.vibeCheck.sampleRewrite}”</blockquote> : <button onClick={loadVibe} disabled={vibe}>{vibe ? 'READING COPY…' : 'ANALYZE TONE ↗'}</button>}</section>
     <IssueGroup title="Quick wins" copy="Small changes with immediate upside." list={quick} auditId={auditId}/>
     <IssueGroup title="Worth your attention" copy="Deeper improvements to plan next." list={other} auditId={auditId}/>
     <Chat auditId={auditId}/>
@@ -297,7 +334,66 @@ function Compare() {
   };
   if (!audit) return <main className="report loading page-shell">Loading…</main>;
   const comparison = audit.competitorComparison;
-  return <main className="report page-shell"><header><Link to={`/report/${auditId}`} className="brand">site<span>cast</span></Link><Link to={`/report/${auditId}`}>← REPORT</Link></header><section className="comparehero"><p className="eyebrow">SHADOW MODE</p><h2>See where you<br/><em>outpace the field.</em></h2><form className="compareform glass-panel" onSubmit={submit}><input required type="url" value={url} onChange={event => setUrl(event.target.value)} placeholder="https://competitor.com"/><button>{loading ? 'SCANNING…' : 'COMPARE ↗'}</button></form>{err && <p className="formerror">{err}</p>}</section>{comparison && <><section className="versus glass-panel"><div><small>YOU</small><b>{hostName(audit.url)}</b></div><div className="vs">VS</div><div><small>THEM</small><b>{hostName(comparison.competitorUrl)}</b></div></section><section className="metrics">{Object.entries(comparison.metrics).map(([key, value]) => <article className="glass-panel" key={key}><span>{key.replace(/([A-Z])/g, ' $1')}</span><b>{key === 'loadTime' ? `${Math.round(value.you)}ms` : value.you}</b><i>YOU</i><b>{key === 'loadTime' ? `${Math.round(value.them)}ms` : value.them}</b><i>THEM</i></article>)}</section><section className="battle glass-panel"><p className="eyebrow">BATTLE CARD</p>{comparison.battleCard.map((card, index) => <p key={index} className={card.type}>{card.type === 'winning' ? '✓ WINNING' : '↗ OPPORTUNITY'} <span>{card.text}</span></p>)}</section></>}<Chat auditId={auditId}/></main>;
+  return <main className="report page-shell">
+    <header><Link to={`/report/${auditId}`} className="brand">site<span>cast</span></Link><Link to={`/report/${auditId}`}>← REPORT</Link></header>
+    <section className="comparehero">
+      <p className="eyebrow">SHADOW MODE</p>
+      <h2>See where you<br/><em>outpace the field.</em></h2>
+      <form className="compareform glass-panel" onSubmit={submit}>
+        <input required type="url" value={url} onChange={event => setUrl(event.target.value)} placeholder="https://competitor.com"/>
+        <button>{loading ? 'SCANNING…' : 'COMPARE ↗'}</button>
+      </form>
+      {err && <p className="formerror">{err}</p>}
+    </section>
+    {comparison && <>
+      <section className="versus glass-panel">
+        <div><small>YOU</small><b>{hostName(audit.url)}</b></div>
+        <div className="vs">VS</div>
+        <div><small>THEM</small><b>{hostName(comparison.competitorUrl)}</b></div>
+      </section>
+      <section className="metrics">
+        {Object.entries(comparison.metrics).map(([key, value]) => (
+          <article className="glass-panel" key={key}>
+            <span>{key.replace(/([A-Z])/g, ' $1')}</span>
+            <b>{key === 'loadTime' ? `${Math.round(value.you)}ms` : value.you}</b><i>YOU</i>
+            <b>{key === 'loadTime' ? `${Math.round(value.them)}ms` : value.them}</b><i>THEM</i>
+          </article>
+        ))}
+      </section>
+      
+      <section className="battle-container">
+        <div className="battle-column winning-column glass-panel">
+          <p className="eyebrow">✓ WHERE YOU'RE WINNING</p>
+          <div className="battle-cards">
+            {comparison.battleCard.filter(c => c.type === 'winning').map((card, index) => (
+              <div key={index} className="battle-card winning-card">
+                <span className="status-badge winning-badge">✓ WINNING</span>
+                <p>{card.text}</p>
+              </div>
+            ))}
+            {comparison.battleCard.filter(c => c.type === 'winning').length === 0 && (
+              <p className="empty-message">No clear technical advantages found over the competitor yet.</p>
+            )}
+          </div>
+        </div>
+        <div className="battle-column opportunity-column glass-panel">
+          <p className="eyebrow">↗ OPPORTUNITIES TO FIX</p>
+          <div className="battle-cards">
+            {comparison.battleCard.filter(c => c.type !== 'winning').map((card, index) => (
+              <div key={index} className="battle-card opportunity-card">
+                <span className="status-badge opportunity-badge">↗ OPPORTUNITY</span>
+                <p>{card.text}</p>
+              </div>
+            ))}
+            {comparison.battleCard.filter(c => c.type !== 'winning').length === 0 && (
+              <p className="empty-message">Outstanding! No catch-up signals found relative to the competitor.</p>
+            )}
+          </div>
+        </div>
+      </section>
+    </>}
+    <Chat auditId={auditId}/>
+  </main>;
 }
 
 function Fix() {
@@ -309,7 +405,34 @@ function Fix() {
   const issue = Object.values(audit.categories || {}).flatMap(category => category.issues || []).find(item => item._id === issueId);
   if (!issue) return <main className="report page-shell">Issue not found.</main>;
   const merge = async () => { await api.patch(`/audit/${auditId}/issues/${issueId}`); setDone(true); };
-  return <main className="report page-shell"><header><Link to={`/report/${auditId}`} className="brand">site<span>cast</span></Link><Link to={`/report/${auditId}`}>← REPORT</Link></header><section className="surgeon"><p className="eyebrow">AUTO-SURGEON · STAGED CHANGE</p><h2>{issue.title}</h2><p>{issue.fixSuggestion}</p><div className="diff glass-panel"><span>− Before</span><code>&lt;!-- This signal is currently missing --&gt;</code><span>+ Proposed fix</span><code>{issue.fixSnippet || 'Follow the implementation guidance in your codebase.'}</code></div>{done ? <div className="merged glass-panel">✓ Fix marked as resolved in this report.</div> : <button className="merge" onClick={merge}>MERGE FIX ↗</button>}</section></main>;
+  return <main className="report page-shell">
+    <header><Link to={`/report/${auditId}`} className="brand">site<span>cast</span></Link><Link to={`/report/${auditId}`}>← REPORT</Link></header>
+    <section className="surgeon">
+      <p className="eyebrow">AUTO-SURGEON · STAGED CHANGE</p>
+      <h2>{issue.title}</h2>
+      <p className="surgeon-description">A staged preview of the generated code fix, the first step toward full GitHub PR automation.</p>
+      <p className="surgeon-suggestion">{issue.fixSuggestion}</p>
+      <div className="diff glass-panel">
+        <div className="diff-header">
+          <span className="dot red"></span>
+          <span className="dot yellow"></span>
+          <span className="dot green"></span>
+          <span className="filename">surgeon_patch.diff</span>
+        </div>
+        <div className="diff-body">
+          <div className="diff-line removed">
+            <span className="diff-sign">−</span>
+            <code>&lt;!-- This signal is currently missing or needs adjustment --&gt;</code>
+          </div>
+          <div className="diff-line added">
+            <span className="diff-sign">+</span>
+            <code>{issue.fixSnippet || '/* Follow implementation suggestion to resolve this issue */'}</code>
+          </div>
+        </div>
+      </div>
+      {done ? <div className="merged glass-panel">✓ Fix marked as resolved in this report.</div> : <button className="merge" onClick={merge}>MERGE FIX ↗</button>}
+    </section>
+  </main>;
 }
 
 function App() {

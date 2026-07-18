@@ -4,16 +4,16 @@ import axios from 'axios';
 import fs from 'fs';
 
 const impact = {
-  'missing-title': 'Search engines and browser tabs cannot clearly identify this page, reducing discovery and trust.',
-  'title-length': 'A vague or truncated search result can lower click-through rate from qualified visitors.',
-  'missing-description': 'Search results may show unhelpful page text, making your result less compelling to click.',
-  'missing-h1': 'Visitors and search engines lack a clear statement of what this page is about.',
-  'multiple-h1': 'Competing primary headings muddy the page focus for people and search engines.',
-  'heading-skip': 'Skipped heading levels make content harder to navigate with assistive technology.',
-  'missing-alt': "Screen reader users can't tell what this image shows, excluding potential customers.",
-  'missing-viewport': 'Mobile visitors may see a cramped desktop layout and leave before engaging.',
-  'slow-load': 'Slow pages increase bounce rate; every lost second can mean lost leads and revenue.',
-  'large-images': 'Oversized images consume mobile data and delay the first useful view of the page.'
+  'missing-title': 'Search engines and browser tabs cannot identify your page, costing you search rankings, search visibility, and organic visitor traffic.',
+  'title-length': 'An improperly sized title will display truncated in search results, looking unprofessional and costing you clicks from potential buyers.',
+  'missing-description': 'Search engines will display random page snippets instead of a compelling pitch, costing you search click-throughs and customer interest.',
+  'missing-h1': 'Search bots and human readers cannot quickly identify the page purpose, costing you initial engagement and increasing immediate bounces.',
+  'multiple-h1': 'Diluted search relevancy from competing headings confuses search engines, costing you organic keyword rankings.',
+  'heading-skip': 'Disabled users lose clean section transitions, costing you sales from an accessible audience segment and risking compliance issues.',
+  'missing-alt': 'Screen readers cannot describe images, costing you sales from visually impaired visitors and lowering search engine image discovery.',
+  'missing-viewport': 'The page will look tiny and broken on phones, costing you mobile conversions as over 50% of web traffic is mobile.',
+  'slow-load': 'Slow loads directly spike page bounces. A delay of just a few seconds costs you valuable leads and drives customers to competitors.',
+  'large-images': 'Oversized images delay mobile page rendering and exhaust data limits, costing you page views from mobile visitors on slower networks.'
 };
 const issue = (category, severity, type, title, description, fixSuggestion, fixSnippet = null) => ({
   category, severity, title, description, businessImpact: impact[type], fixSuggestion, fixSnippet,
