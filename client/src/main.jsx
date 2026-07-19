@@ -307,7 +307,8 @@ function Report() {
 }
 
 function IssueGroup({ title, copy, list, auditId }) {
-  
+  return <section className="issues"><div className="sectionhead"><div><p className="eyebrow">{title.toUpperCase()}</p><h3>{copy}</h3></div><span>{list.length} ITEMS</span></div>{!list.length ? <div className="empty glass-panel">Nothing here — you're in great shape.</div> : list.map(issue => <article className="issue glass-panel" key={issue._id}><div className={`severity ${issue.severity}`}/><div><div className="issuehead"><span>{issue.category}</span><b>{issue.title}</b><em>{issue.severity}</em></div><p>{issue.description}</p><p className="impact"><strong>Business impact:</strong> {issue.businessImpact}</p></div><Link className="fix" to={`/report/${auditId}/fix/${issue._id}`}>AUTO-FIX ↗</Link></article>)}</section>;
+}
 
 function Compare() {
   const { auditId } = useParams();
