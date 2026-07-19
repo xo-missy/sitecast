@@ -195,16 +195,7 @@ function Landing() {
           <h3>Shadow Mode</h3>
           <p>Compares your site against a competitor's and generates a comprehensive "Battle Card" detailing exactly what to fix and where you are already winning.</p>
         </div>
-        <div className="feature-card glass-panel">
-          <span className="feature-icon">✨</span>
-          <h3>Vibe Check (GPT-5.6)</h3>
-          <p>Analyzes your landing copy's tone using state-of-the-art language models and suggests a friendlier, higher-converting rewrite instantly.</p>
-        </div>
-        <div className="feature-card glass-panel">
-          <span className="feature-icon">💬</span>
-          <h3>Ask Me Anything</h3>
-          <p>A conversational chat assistant scoped directly to your specific audit results, allowing you to ask follow-up questions about fixes.</p>
-        </div>
+        
         <div className="feature-card glass-panel">
           <span className="feature-icon">⚡</span>
           <h3>Auto-Surgeon Fixes</h3>
