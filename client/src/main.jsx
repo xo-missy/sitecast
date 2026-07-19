@@ -336,7 +336,7 @@ function Compare() {
       </form>
       {err && <p className="formerror">{err}</p>}
     </section>
-    {comparison && <>
+  {comparison && comparison.metrics && <>
       <section className="versus glass-panel">
         <div><small>YOU</small><b>{hostName(audit.url)}</b></div>
         <div className="vs">VS</div>
