@@ -4,4 +4,5 @@ client/dist/
 *.png
 server/screenshots/
 .env*
+!.env*.example
 .DS_Store
