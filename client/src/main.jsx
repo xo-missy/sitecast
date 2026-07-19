@@ -308,10 +308,10 @@ function Report() {
     </section>
     <section className="categories" aria-label="Audit category scores">{Object.entries(categories).map(([category, data]) => <CategoryCard key={category} category={category} data={data} />)}</section>
     <GhostComparison />
-    <section className="vibe glass-panel"><div><p className="eyebrow">✦ AI VIBE CHECK (GPT-5.6)</p><h3>{audit.vibeCheck?.tone || 'Does your copy sound like you?'}</h3><p>{audit.vibeCheck?.summary || 'Read your site’s tone through the eyes of a first-time visitor.'}</p></div>{audit.vibeCheck ? <blockquote>“{audit.vibeCheck.sampleRewrite}”</blockquote> : <button onClick={loadVibe} disabled={vibe}>{vibe ? 'READING COPY…' : 'ANALYZE TONE ↗'}</button>}</section>
+
     <IssueGroup title="Quick wins" copy="Small changes with immediate upside." list={quick} auditId={auditId}/>
     <IssueGroup title="Worth your attention" copy="Deeper improvements to plan next." list={other} auditId={auditId}/>
-    <Chat auditId={auditId}/>
+   
   </main>;
 }
 
@@ -392,7 +392,7 @@ function Compare() {
         </div>
       </section>
     </>}
-    <Chat auditId={auditId}/>
+    
   </main>;
 }
 
