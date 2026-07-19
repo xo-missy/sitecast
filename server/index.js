@@ -4,7 +4,7 @@ import OpenAI from 'openai'; import Audit from './models/Audit.js'; import { sca
 
 const app = express(); app.use(cors()); app.use(express.json({ limit: '1mb' }));
 const PORT = process.env.PORT || 5000; const memory = new Map(); let dbReady = false;
-mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/sitecast', { serverSelectionTimeoutMS: 2500 }).then(() => { dbReady = true; console.log('MongoDB connected'); }).catch(() => console.warn('MongoDB unavailable — using temporary in-memory audits.'));
+mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/sitecast', { serverSelectionTimeoutMS: 15000 }).then(() => { dbReady = true; console.log('MongoDB connected'); }).catch(() => console.warn('MongoDB unavailable — using temporary in-memory audits.'));
 const validUrl = value => { try { const u = new URL(value); return ['http:', 'https:'].includes(u.protocol) ? u.href : null; } catch { return null; } };
 const save = async audit => { if (dbReady) return audit.save(); memory.set(String(audit._id), audit); return audit; };
 const find = async id => dbReady ? Audit.findById(id) : memory.get(id);
@@ -12,24 +12,35 @@ const newAudit = data => dbReady ? new Audit(data) : { _id: new mongoose.Types.O
 const ai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 
 app.post('/api/audit', async (req, res) => {
-  const url = validUrl(req.body.url); if (!url) return res.status(400).json({ error: 'Enter a valid http(s) URL.' });
+  const url = validUrl(req.body.url);
+  console.log(`[POST /api/audit] Received URL: "${req.body.url}" -> Validated URL: "${url}"`);
+  if (!url) {
+    console.warn(`[POST /api/audit] Invalid URL: "${req.body.url}"`);
+    return res.status(400).json({ error: 'Enter a valid http(s) URL.' });
+  }
   const audit = newAudit({
     url,
     status: 'pending',
     currentStep: 'Queueing audit…',
     scanUpdates: [{ id: 'queued', text: 'Audit queued. Preparing a clean browser session…', level: 'info' }]
   });
-  await save(audit); res.status(202).json({ auditId: audit._id });
+  await save(audit);
+  console.log(`[POST /api/audit] Saved pending audit with ID: ${audit._id}`);
+  res.status(202).json({ auditId: audit._id });
   const updateProgress = async (id, text, level = 'ok') => {
     audit.currentStep = text;
     audit.scanUpdates = [...(audit.scanUpdates || []).filter(update => update.id !== id), { id, text, level, createdAt: new Date() }].slice(-12);
     await save(audit);
   };
+  console.log(`[POST /api/audit] Invoking scanSite for URL: "${url}"`);
   scanSite(url, false, updateProgress).then(async data => {
+    console.log(`[POST /api/audit] scanSite finished for URL: "${url}". Overall Score: ${data.overallScore}, Categories:`, Object.keys(data.categories));
     await updateProgress('report', 'Compiling your audit report…');
     Object.assign(audit, data, { status: 'complete', currentStep: 'Audit complete' });
     await save(audit);
+    console.log(`[POST /api/audit] Saved complete audit: ${audit._id}`);
   }).catch(async err => {
+    console.error(`[POST /api/audit] scanSite failed for URL: "${url}":`, err);
     audit.status = 'failed';
     audit.error = err.message.includes('Timeout') ? 'The site took too long to respond. Try again or check the URL.' : `Scan failed: ${err.message}`;
     audit.currentStep = 'Audit failed';
@@ -124,6 +135,8 @@ app.post('/api/audit/:id/vibe-check', async (req, res) => {
   const audit = await find(req.params.id);
   if (!audit) return res.status(404).json({ error: 'Audit not found.' });
   
+  console.log(`[Vibe Check] Audit ID: ${audit._id}, URL: "${audit.url}". Page Copy Text Length: ${audit.pageText?.length || 0}. Extracted text preview: "${(audit.pageText || '').slice(0, 200).replace(/\s+/g, ' ')}..."`);
+  
   if (ai) {
     try {
       const systemPrompt = `Analyze the website copy tone. Return JSON with keys: tone, summary, sampleRewrite.
@@ -137,10 +150,13 @@ app.post('/api/audit/:id/vibe-check', async (req, res) => {
       });
       audit.vibeCheck = JSON.parse(result.choices[0].message.content);
       await save(audit);
+      console.log(`[Vibe Check] OpenAI analysis succeeded. Verdict: ${audit.vibeCheck.tone}`);
       return res.json(audit.vibeCheck);
     } catch (err) {
-      console.error("AI Vibe Check failed, falling back to programmatic:", err);
+      console.error("[Vibe Check] AI Vibe Check failed, falling back to programmatic:", err);
     }
+  } else {
+    console.log(`[Vibe Check] OpenAI client is not initialized (no key), using programmatic fallback.`);
   }
   
   // Programmatic fallback
@@ -198,7 +214,8 @@ app.post('/api/audit/:id/ask', async (req, res) => {
       });
       return res.json({ answer: completion.choices[0].message.content });
     } catch (err) {
-      console.error("AI Chat Ask failed, falling back to programmatic:", err);
+      console.error("AI Chat Ask failed:", err);
+      return res.status(500).json({ error: "AI Chat Assistant failed to generate a response.", details: err.message });
     }
   }
   

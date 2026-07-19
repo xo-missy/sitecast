@@ -14,6 +14,11 @@ const ScanUpdateSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 }, { _id: false });
 
+const BattleCardSchema = new mongoose.Schema({
+  type: { type: String },
+  text: String
+}, { _id: false });
+
 const AuditSchema = new mongoose.Schema({
   url: String, createdAt: { type: Date, default: Date.now }, status: { type: String, default: 'pending' },
   error: String, currentStep: String, scanUpdates: [ScanUpdateSchema], overallScore: Number,
@@ -21,6 +26,6 @@ const AuditSchema = new mongoose.Schema({
   categories: { performance: category, seo: category, accessibility: category, mobile: category },
   pageText: String,
   vibeCheck: { tone: String, summary: String, sampleRewrite: String },
-  competitorComparison: { competitorUrl: String, metrics: mongoose.Schema.Types.Mixed, battleCard: [{ type: String, text: String }] }
+  competitorComparison: { competitorUrl: String, metrics: mongoose.Schema.Types.Mixed, battleCard: [BattleCardSchema] }
 });
 export default mongoose.model('Audit', AuditSchema);

@@ -52,16 +52,22 @@ export async function scanSite(url, light = false, onProgress = null) {
 
     await page.setViewport({ width: 1440, height: 900, isMobile: false });
     await progress('request', `Requesting ${new URL(url).hostname}…`);
+    console.log(`[scanSite] Puppeteer requesting URL: "${url}"`);
     const started = Date.now();
     const response = await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
     loadTime = Date.now() - started;
+    const finalUrl = page.url();
+    console.log(`[scanSite] Puppeteer loaded page. Final URL: "${finalUrl}" (after redirect, if any), status code: ${response?.status()}, duration: ${loadTime}ms`);
     html = await page.content();
     responseStatus = response?.status();
     await progress('load-time', `Measuring page load timing… [${(loadTime / 1000).toFixed(1)}s]`);
     
     try {
-      text = (await page.locator('body').innerText()).slice(0, 12000);
-    } catch {
+      text = await page.evaluate(() => document.body.innerText);
+      text = (text || '').replace(/\s+/g, ' ').trim().slice(0, 12000);
+      console.log(`[scanSite] Extracted ${text.length} chars of page text using page.evaluate.`);
+    } catch (err) {
+      console.error(`[scanSite] Puppeteer text extraction failed:`, err);
       text = '';
     }
 
@@ -98,6 +104,7 @@ export async function scanSite(url, light = false, onProgress = null) {
       responseStatus = response.status;
       const $temp = cheerio.load(html);
       text = $temp('body').text().replace(/\s+/g, ' ').trim().slice(0, 12000);
+      console.log(`[scanSite] Fallback static fetch succeeded. Extracted ${text.length} chars of page text.`);
       await progress('load-time', `Measuring page load timing… [${(loadTime / 1000).toFixed(1)}s]`);
     } catch (err) {
       const isLaunchError = fallbackError && 
